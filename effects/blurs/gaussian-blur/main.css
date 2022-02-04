@@ -1,0 +1,69 @@
+* {
+  overflow: none;
+}
+
+body {
+  width: 525dip;
+  height: max-content;
+}
+
+div #container {
+  size: *;
+  margin: 1em;
+}
+
+div .row {
+  size: *;
+  flow: horizontal;
+  vertical-align: middle;
+}
+
+div .column {
+  size: *;
+  flow: horizontal;
+}
+
+div .column-short {
+  size: 0.2*;
+  flow: horizontal;
+}
+
+div .column-undo {
+  size: 0.1*;
+  flow: horizontal;
+  margin-left: 0.5em;
+  padding: 0em;
+}
+
+div .filler {
+  size: *;
+}
+
+div .buttons {
+  flow: horizontal;
+  border-spacing: 1em;
+  width: 50%;
+}
+
+hr {
+  size: *;
+  margin-top: 0.5em;
+}
+
+span {
+  margin-right: 0.5em;
+}
+
+input[type="hslider"] {
+  width: *;
+  height: 0.5em;
+}
+
+input[type="integer"] {
+  width: *;
+  text-align: right;
+}
+
+div .buttons>button {
+  width: *;
+}

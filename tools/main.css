@@ -1,0 +1,60 @@
+* {
+  overflow: none;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: calc(24dip + 24dip);
+}
+
+div#container {
+  size: *;
+  flow: horizontal-flow;
+}
+
+.tool {
+  style-set: std-radio-base;
+  behavior: radio;
+  display: inline-block;
+  width: 24dip;
+  height: 24dip;
+  background-size: 90%;
+  background-repeat: no-repeat;
+  background-position: center;
+  outline-offset: -1px;
+  font-family: FontAwesome;
+}
+
+.tool:disabled {
+  filter: grayscale(100%);
+}
+
+.tool:hover {
+  background-color: rgba(0, 0, 255, 0.3);
+}
+
+.tool:checked {
+  outline: 1px solid rgba(0, 0, 255, 1);
+  background-color: rgba(0, 0, 255, 0.5);
+}
+
+.tool:active {
+  background-color: rgba(0, 0, 255, 0.75);
+}
+
+#rectangle-select {
+  background-image: url(../icons/rectangle_select.png);
+}
+
+#ellipse-select {
+  background-image: url(../icons/ellipse_select.png);
+}
+
+#lasso-select {
+  background-image: url(../icons/lasso_select.png);
+}
+
+#magic-wand {
+  background-image: url(../icons/magic_wand.png);
+}

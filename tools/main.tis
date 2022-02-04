@@ -1,0 +1,10 @@
+function self.ready() {
+  const w = self.intrinsicWidthMax();
+  const h = self.intrinsicHeight(w);
+  const (sw, sh) = view.screenBox(#frame, #dimension);
+  view.move((sw / 2) - (w / 2), (sh / 2) - (h / 2), w, h, true);
+}
+
+$(.tool#rectangle-select) << event click {
+  view.parameters.callbacks.onRectangleSelectClick();
+}

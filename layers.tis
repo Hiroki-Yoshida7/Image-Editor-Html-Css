@@ -1,0 +1,16 @@
+function onLayerSelect(index) {
+  $(div.layer.current).attributes.removeClass("current");
+  $$(div.layer)[index].attributes.addClass("current");
+}
+
+const layersPopup = view.window({
+  type: View.TOOL_WINDOW,
+  url: self.url("layers/main.htm"),
+  state: View.WINDOW_SHOWN,
+  caption: "Layers",
+  parameters: {
+    callbacks: {
+      onLayerSelect: onLayerSelect
+    }
+  }
+});

@@ -1,0 +1,48 @@
+<html window-resizable=false>
+
+  <head>
+    <title>Gaussian Blur</title>
+    <link rel="stylesheet" href="main.css" />
+    <script type="text/tiscript" src="main.tis"></script>
+  </head>
+
+  <body>
+    <div #container>
+
+      <div .row>
+        <div .column>
+          <span>Radius</span>
+          <hr>
+        </div>
+      </div>
+
+      <div .row>
+        <div .column>
+          <input |hslider #radius min="0" value="0" max="200" />
+        </div>
+        <div .column-short>
+          <input|integer .radius min=0 max=200 step=1 value=0>
+        </div>
+        <div .column-undo>
+          <button .undo (radius)><img src="sciter:undo.png" /></button>
+        </div>
+      </div>
+
+      <div .row>
+        <div .column>
+          <hr>
+        </div>
+      </div>
+
+      <div .row>
+        <div .filler></div>
+        <div .buttons>
+          <button #ok>OK</button>
+          <button #cancel>Cancel</button>
+        </div>
+      </div>
+
+    </div>
+  </body>
+
+</html>

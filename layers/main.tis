@@ -1,0 +1,63 @@
+function self.ready() {
+  const w = self.intrinsicWidthMax();
+  const h = self.intrinsicHeight(w);
+  const (sw, sh) = view.screenBox(#frame, #dimension);
+  view.move((sw / 2) - (w / 2), (sh / 2) - (h / 2), w, h, true);
+  view.id = "layers";
+}
+
+
+event click $(li) (evt) {
+  view.parameters.callbacks.onLayerSelect($$(li).indexOf(this));
+} 
+
+event layer-created() {
+  const number = $$(li).length;
+  $(ul).$append(<li><div .layer-thumbnail></div><span>Layer {number + 1}</span></li>);
+}
+
+// https://stackoverflow.com/a/21351407/13378247
+function fitInBox(width, height, maxWidth, maxHeight, expandable) {
+  try {
+    var aspect = width / height,
+        initWidth = width,
+        initHeight = height;
+
+    if (width > maxWidth || height < maxHeight) {
+        width = maxWidth;
+        height = Math.floor(width / aspect);
+    }
+
+    if (height > maxHeight || width < maxWidth) {
+        height = maxHeight;
+        width = Math.floor(height * aspect);
+    }
+
+    if (!!expandable === false && (width >= initWidth || height >= initHeight)) {
+        width = initWidth;
+        height = initHeight;
+    }
+
+    return {
+        width: width,
+        height: height
+    };
+  } catch(e) {
+    return { width: 1, height: 1 };
+  }
+}
+
+event update-layer-thumbnail (evt) {
+  const thumbnailImage = evt.data.thumbnailImage;
+  const index = evt.data.index;
+
+  const { width, height } = fitInBox(thumbnailImage.width, thumbnailImage.height, 32, 32, false);
+
+  const y = (32 - height) / 2;
+
+  $$(li)[index].$(.layer-thumbnail).paintContent = function(gfx) {
+    gfx.blendImage(thumbnailImage, 0, y, width, height);
+  }
+
+  $$(li)[index].refresh();
+}

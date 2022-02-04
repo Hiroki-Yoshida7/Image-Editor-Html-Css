@@ -1,0 +1,67 @@
+<html window-resizable=false>
+
+  <head>
+    <title>Brightness / Contrast</title>
+    <link rel="stylesheet" href="main.css" />
+    <script type="text/tiscript" src="main.tis"></script>
+  </head>
+
+  <body>
+    <div #container>
+
+      <div .row>
+        <div .column>
+          <span>Brightness</span>
+          <hr>
+        </div>
+      </div>
+
+      <div .row>
+        <div .column>
+          <input |hslider #brightness min="-100" value="0" max="100" />
+        </div>
+        <div .column-short>
+          <input|integer .brightness min=-100 max=100 step=1 value=0>
+        </div>
+        <div .column-undo>
+          <button .undo (brightness)><img src="sciter:undo.png" /></button>
+        </div>
+      </div>
+
+      <div .row>
+        <div .column>
+          <span>Contrast</span>
+          <hr>
+        </div>
+      </div>
+
+      <div .row>
+        <div .column>
+          <input |hslider #contrast min="-100" value="0" max="100" />
+        </div>
+        <div .column-short>
+          <input|integer .contrast min=-100 max=100 step=1 value=0>
+        </div>
+        <div .column-undo>
+          <button .undo (contrast)><img src="sciter:undo.png"/></button>
+        </div>
+      </div>
+
+      <div .row>
+        <div .column>
+          <hr>
+        </div>
+      </div>
+
+      <div .row>
+        <div .filler></div>
+        <div .buttons>
+          <button #ok>OK</button>
+          <button #cancel>Cancel</button>
+        </div>
+      </div>
+
+    </div>
+  </body>
+
+</html>

@@ -1,0 +1,298 @@
+view.connectToInspector && view.connectToInspector(rootElement, inspectorIpAddress);
+
+function self.ready() {
+  const w = 625dip;
+  const h = 306dip;
+  const (sw, sh) = view.screenBox(#frame, #dimension);
+  view.move((sw / 2) - (w / 2), (sh / 2) - (h / 2), w, h, false);
+}
+
+function emitLayerCreatedEvent() {
+  View.all.find((v) => v.id == "layers").root.postEvent("layer-created");
+}
+
+const globalThis = {
+  filename: "",
+  filter: "PNG Files (*.png)|*.png|All Files (*.*)|*.*",
+  extension: "png",
+  undos: [],
+  redos: []
+};
+
+const UNDO = 0;
+const REDO = 1;
+
+function addUndo(fn) {
+  const { undos } = globalThis;
+  undos.push(fn);
+  $(li #menu-undo).state#disabled = undos.length == 0;
+
+  updateLayerThumbnail($(div.layer.current));
+}
+
+function addRedo(fn) {
+  const { redos } = globalThis;
+  redos.push(fn);
+  $(li #menu-redo).state#disabled = redos.length == 0;
+
+  updateLayerThumbnail($(div.layer.current));
+}
+
+function getUndo() {
+  const { undos } = globalThis;
+  const undo = undos.pop();
+  $(li #menu-undo).state#disabled = undos.length == 0;
+  return undo;
+}
+
+function getRedo() {
+  const { redos } = globalThis;
+  const redo = redos.pop();
+  $(li #menu-redo).state#disabled = redos.length == 0;
+  return redo;
+}
+
+function performUndo() {
+  const undo = getUndo();
+  undo(UNDO);
+  addRedo(undo);
+
+  updateLayerThumbnail($(div.layer.current));
+}
+
+function performRedo() {
+  const redo = getRedo();
+  redo(REDO);
+  addUndo(redo);
+
+  updateLayerThumbnail($(div.layer.current));
+}
+
+function activateMenuItems() {
+  const lis = $$(#menu-file > li)
+    .concat($$(#menu-adjustments > li))
+    .concat($$(#menu-effects > li));
+  for (var li in lis) {
+    li.state#disabled = false;
+  }
+}
+
+function updateLayerThumbnail(layer) {
+    const thumbnailImage = new Image(
+    layer.style["width"].toInteger(), 
+    layer.style["height"].toInteger(), 
+    layer
+  );
+  View.all.find((v) => v.id == "layers").root.postEvent("update-layer-thumbnail", {
+    index: $$(div.layer).indexOf(layer),
+    thumbnailImage: thumbnailImage 
+  });
+}
+
+$(li #menu-open) << event click {
+  const { filter } = globalThis;
+  const filename = view.selectFile(#open, filter);
+  if (! filename) return;
+
+  globalThis.filename = filename;
+
+  const image = Image.fromBytes(Bytes.load(filename));
+  const width = image.width;
+  const height = image.height;
+
+  $(div.layer.current).attributes.remove("current");
+  $(div#canvas).$append(<div.layer.current></div>);
+  
+  $(div.layer.current).style.set { width: width, height: height };
+  $(div.layer.current).filters = [];
+  $(div.layer.current).paintContent = function(gfx) {
+    for (var filter in this.filters.clone().reverse()) {
+      gfx.pushLayer(#inner-box, filter);
+    }
+    gfx.blendImage(image, 0, 0);
+  }
+
+  activateMenuItems();
+
+  emitLayerCreatedEvent();
+}
+
+$(li #menu-save) << event click {
+  const { filename, filter, extension } = globalThis;
+
+  const (w, h) = $(div.layer.current).box(#dimension);
+  const image = new Image(w, h, $(div.layer.current));
+  const bytes = image.toBytes();
+  bytes.save(filename);
+}
+
+$(li #menu-save-as) << event click {
+  const { filter, extension } = globalThis;
+  const filename = view.selectFile(#save, filter, extension);
+  if (! filename) return;
+
+  const (w, h) = $(div.layer.current).box(#dimension);
+  const image = new Image(w, h, $(div.layer.current));
+  const bytes = image.toBytes();
+  bytes.save(filename);
+}
+
+$(li #menu-undo) << event click {
+  performUndo();
+}
+
+$(li #menu-redo) << event click {
+  performRedo();
+}
+
+function applyFilter(filter) {
+  const action = () => $(div.layer.current).filters.push(filter);
+  action();
+  
+  const undo = function(which) {
+    if (which == UNDO) {
+      $(div.layer.current).filters.pop();
+    } else if (which == REDO) {
+      action();
+    }
+  }
+  addUndo(undo);
+}
+
+$(li #menu-invert-colors).on("click", :: applyFilter([invert:1]));
+$(li #menu-black-and-white).on("click", :: applyFilter([grayscale:1.0]));
+$(li #menu-sepia).on("click", :: applyFilter([sepia:1.0]));
+
+// https://gist.github.com/xposedbones/75ebaef3c10060a3ee3b246166caab56
+const map = (value, x1, y1, x2, y2) => (value - x1) * (y2 - x2) / (y1 - x1) + x2;
+
+function mapBrightness(brightness) {
+  // [-100, 0, 100] => [-1, 0, 1]
+  return map(brightness, -100.0, 100.0, -1.0, 1.0);
+}
+
+function mapContrast(contrast) {
+  // [-100, 0, 50, 100] => [0, 1, 2, 10]
+  if (contrast <= 0.0) return map(contrast, -100.0, 0.0, 0.0, 1.0);
+  if (contrast > 0.0 && contrast <= 50.0) return map(contrast, 0.0, 50.0, 1.0, 2.0);
+  return map(contrast, 50.0, 100.0, 2.0, 10.0);
+}
+
+function mapGaussianBlurRadius(radius) {
+  return px(radius);  
+}
+
+function openBrightnessContrastPopup() {
+  $(div.layer.current).filters.push([brightness:0.0]);
+  $(div.layer.current).filters.push([contrast:1.0]);
+  $(div.layer.current).refresh();
+
+  const onBrightnessChange = function(brightness) {
+    const index = $(div.layer.current).filters.length - 2;
+    const value = mapBrightness(brightness);
+    $(div.layer.current).filters[index] = [brightness:value];
+    $(div.layer.current).refresh();
+  }
+
+  const onContrastChange = function(contrast) {
+    const index = $(div.layer.current).filters.length - 1;
+    const value = mapContrast(contrast.toFloat());
+    $(div.layer.current).filters[index] = [contrast:value];
+    $(div.layer.current).refresh();
+  }
+  
+  const onOk = function() {
+    const length = $(div.layer.current).filters.length;
+    const contrast = $(div.layer.current).filters.last[0];
+    const brightness = $(div.layer.current).filters[length - 2][0];
+
+    const undo = function(which) {
+      if (which == UNDO) {
+        $(div.layer.current).filters.pop();
+        $(div.layer.current).filters.pop();
+      } else if (which == REDO) {
+        $(div.layer.current).filters.push([brightness:brightness]);
+        $(div.layer.current).filters.push([contrast:contrast]);
+      }
+    }
+    addUndo(undo);
+  }
+
+  const onCancel = function() {
+    $(div.layer.current).filters.pop();
+    $(div.layer.current).filters.pop();
+    $(div.layer.current).refresh();
+  }
+
+  const popup = view.dialog({ 
+    caption: "Brightness / Contrast",
+    url: self.url("brightness-contrast/main.htm"),
+    parameters: { 
+      foo: "bar",
+      callbacks: {
+        onBrightnessChange: onBrightnessChange,
+        onContrastChange: onContrastChange,
+        onOk: onOk,
+        onCancel: onCancel
+      }
+    }
+  });
+}
+
+$(li #menu-brightness-contrast) << event click {
+  openBrightnessContrastPopup();
+}
+
+function openGaussianBlurPopup() {
+  $(div.layer.current).filters.push([blur:0]);
+  $(div.layer.current).refresh();
+
+  const onBlurRadiusChange = function(radius) {
+    const index = $(div.layer.current).filters.length - 2;
+    const value = mapGaussianBlurRadius(radius);
+    $(div.layer.current).filters.last[0] = value;
+    $(div.layer.current).refresh();
+  }
+  
+  const onOk = function() {
+    const blur = $(div.layer.current).filters.last[0];
+
+    const undo = function(which) {
+      if (which == UNDO) {
+        $(div.layer.current).filters.pop();
+      } else if (which == REDO) {
+        $(div.layer.current).filters.push([blur:blur]);
+      }
+    }
+    addUndo(undo);
+  }
+
+  const onCancel = function() {
+    $(div.layer.current).filters.pop();
+    $(div.layer.current).refresh();
+  }
+
+  const popup = view.dialog({ 
+    caption: "Gaussian Blur",
+    url: self.url("effects/blurs/gaussian-blur/main.htm"),
+    parameters: { 
+      foo: "bar",
+      callbacks: {
+        onBlurRadiusChange: onBlurRadiusChange,
+        onOk: onOk,
+        onCancel: onCancel
+      }
+    }
+  });
+}
+
+$(li #menu-gaussian-blur) << event click {
+  openGaussianBlurPopup();
+}
+
+$(li #menu-about) << event click {
+  view.msgbox(#information,
+    "This application uses Sciter Engine (https://sciter.com), © Terra Informatica Software, Inc.",
+    "About"
+  );
+}

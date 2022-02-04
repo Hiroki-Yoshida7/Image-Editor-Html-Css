@@ -1,0 +1,102 @@
+const onRectangleSelectClick = function() {
+  for (var div in $$(div))
+  div.style.set { cursor: "crosshair" };
+}
+
+const toolsPopup = view.window({
+  type: View.TOOL_WINDOW,
+  url: self.url("tools/main.htm"),
+  state: View.WINDOW_SHOWN,
+  caption: "Tools",
+  parameters: {
+    callbacks: {
+      onRectangleSelectClick: onRectangleSelectClick
+    }
+  }
+});
+
+function isRectangleSelectActive() {
+  return toolsPopup.root.$(#rectangle-select).checked;
+}
+
+$(div#canvas) << event mousedown {
+  if (! isRectangleSelectActive()) return;
+
+  $(div.rectangle-select) || $(div#canvas).$append(<div .rectangle-select></div>);
+
+  const (cursorX, cursorY) = view.cursorLocation();
+  const (x, y) = this.box(#rectw, #border, #view);
+
+  $(div.rectangle-select).style.set {
+    left: cursorX - x,
+    top: cursorY - y,
+    width: 0,
+    height: 0
+  }
+}
+
+$(div#canvas) << event mousemove (evt) {
+  if (! isRectangleSelectActive()) return;
+  if (! evt.mainButton) return;
+
+  const (cursorX, cursorY) = view.cursorLocation();
+  const (x, y) = this.box(#rectw, #border, #view);
+  const left = $(div.rectangle-select).style["left"];
+  const top = $(div.rectangle-select).style["top"];
+
+  $(div.rectangle-select).style.set {
+    width: cursorX - x - left,
+    height: cursorY - y - top
+  }
+}
+
+function getImageOfCurrentLayer() {
+  const image = new Image(
+    $(div.layer.current).style["width"].toInteger(), 
+    $(div.layer.current).style["height"].toInteger(), 
+    $(div.layer.current)
+  );
+  return image;
+}
+
+function saveImageOfCurrentLayer() {
+  const image = getImageOfCurrentLayer();
+  const bytes = image.toBytes();
+  bytes.save("output.png");
+}
+
+$(div#canvas) << event mouseup (evt) {
+  if (! isRectangleSelectActive()) return;
+
+  const _x = $(div.current.layer).style["left"].toInteger();
+  const _y = $(div.current.layer).style["top"].toInteger();
+
+  const x = $(div.rectangle-select).style["left"].toInteger();
+  const y = $(div.rectangle-select).style["top"].toInteger();
+
+  const width = $(div.rectangle-select).style["width"].toInteger();
+  const height = $(div.rectangle-select).style["height"].toInteger();
+
+  const image = getImageOfCurrentLayer();
+
+  $(div.layer.current).attributes.removeClass("current");
+
+  $(div#canvas).$append(<div.layer.current></div>);
+
+  $(div.layer.current).style["left"] = x;
+  $(div.layer.current).style["top"] = y;
+  $(div.layer.current).style["width"] = width;
+  $(div.layer.current).style["height"] = height;
+
+  $(div.layer.current).filters = [];
+  $(div.layer.current).paintContent = function(gfx) {
+    for (var filter in this.filters.clone().reverse()) {
+      gfx.pushLayer(#inner-box, filter);
+    }
+    gfx.pushLayer(0, 0, width, height);
+    gfx.blendImage(image, -x + _x, -y + _y);
+  }
+
+  $(div.layer.current).refresh();
+  View.all.find((v) => v.id == "layers").root.postEvent("layer-created");
+}
